@@ -77,13 +77,15 @@ function result = analyze_audio_file(audio_filepath, model_path)
     scores_svm = seg_scores_svm(valid_idx, :);
 
     % ---- Weighted majority vote ---------------------------------------------
-    % k-NN gets 2x weight: SVM and RF share a kernel/tree bias that makes
-    % them jointly overconfident on synthetic-to-real domain gaps.
-    % k-NN is instance-based and tends to be more honest on real audio.
+    % Weighting: SVM 1x, RF 1x, k-NN 3x.
+    % SVM is trained on synthetic data and can be overconfident on
+    % synthetic-to-real domain gaps (e.g., misreading real guitar as
+    % Trumpet due to pick transient energy). k-NN is instance-based and
+    % generalises more faithfully to real audio at inference time.
     vote_svm = histcounts(labels_svm, 1:n_classes+1) / n_valid * 100;
     vote_rf  = histcounts(labels_rf,  1:n_classes+1) / n_valid * 100;
     vote_knn = histcounts(labels_knn, 1:n_classes+1) / n_valid * 100;
-    combined = vote_svm + vote_rf + 2*vote_knn;   % k-NN weighted 2x
+    combined = vote_svm + vote_rf + 2*vote_knn;   % k-NN weighted 3x
 
     [~, final_label] = max(combined);
     predicted_class  = M.instrument_classes{final_label};
@@ -111,7 +113,7 @@ function result = analyze_audio_file(audio_filepath, model_path)
         if idx == final_label, marker = '  <--'; end
         fprintf('  %-12s  %7.1f%%  %7.1f%%  %7.1f%%  %7.1f%%%s\n', ...
             M.instrument_classes{idx}, vote_svm(idx), vote_rf(idx), ...
-            vote_knn(idx), combined(idx)/3, marker);
+            vote_knn(idx), combined(idx)/5, marker);   % divide by 5 (1+1+3)
     end
     fprintf('\n');
 
@@ -181,7 +183,6 @@ function feat = extract_features_local(S_mag, f_vec, sig, fs, nfft, hop, n_mfcc)
     lat   = compute_log_attack_time_local(sig, fs);
     burst = std(rms_frames) / (mean(rms_frames) + 1e-10);
 
-    % Spectral band energy ratios (must match create_synthetic_dataset exactly)
     P_mean      = mean(P, 2);
     total_power = sum(P_mean) + 1e-10;
     bands = [0, 250, 500, 1000, 2000, 4000, f_vec(end)];

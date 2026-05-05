@@ -1,19 +1,20 @@
 %% RUN_INSTRUMENT_PIPELINE.m
 %  End-to-end instrument identification pipeline.
 %  Matches theoretical document (MATH 310) exactly.
-
 clc; clear; close all;
 
 %% ---- USER SETTINGS -------------------------------------------------------
-
-AUDIO_FILE  = '/Users/mackenziehernandez/Documents/MATLAB/MATH310/audiofiles/audiotest2.mp3';
+% AUDIO FILE USER GUIDE:
+% audiotest1.mp3 - Piano
+% audiotest2.mp3 - Guitar
+% audiotest3.mp3 - Violin
+% audiotest4.mp3 - Trumpet
+AUDIO_FILE  = '/Users/mackenziehernandez/Documents/MATLAB/MATH310/audiofiles/audiotest4.mp3';
 MODEL_PATH  = 'instrument_model';
-N_PER_CLASS = 200;
+N_PER_CLASS = 400;
 
 %% ---- STEP 1: Train or load model ----------------------------------------
-
 model_file = [MODEL_PATH '.mat'];
-
 if isfile(model_file)
     fprintf('Found existing model: %s\n', model_file);
     fprintf('Delete instrument_model.mat to retrain.\n\n');
@@ -23,15 +24,12 @@ else
 end
 
 %% ---- STEP 2: Analyze audio file -----------------------------------------
-
 if ~isfile(AUDIO_FILE)
     error('Audio file not found: "%s"\nUpdate AUDIO_FILE above.', AUDIO_FILE);
 end
-
 result = analyze_audio_file(AUDIO_FILE, model_file);
 
 %% ---- STEP 3: Summary  (uses correct result field names) -----------------
-
 fprintf('=== FINAL RESULT ===\n');
 fprintf('  File:             %s\n', AUDIO_FILE);
 fprintf('  SVM prediction:   %s\n', result.svm_top);
